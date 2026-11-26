@@ -58,7 +58,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             itemCount: _c.reviews.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (_, i) => _ReviewTile(review: _c.reviews[i]),
           ),
         );
