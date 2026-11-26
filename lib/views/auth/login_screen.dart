@@ -62,13 +62,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     AppSnack.success('A 4 digit OTP code has been sent. Default OTP is 1234');
 
-    Get.to(
+    final otpRes = await Get.to(
       () => OtpScreen(
         email: email,
         password: _password.text.isNotEmpty ? _password.text : 'CraftyBay@123',
         redirectToCheckout: widget.redirectToCheckout,
       ),
     );
+    if (otpRes == true && mounted && widget.redirectToCheckout) {
+      Get.back(result: true);
+    }
   }
 
   @override

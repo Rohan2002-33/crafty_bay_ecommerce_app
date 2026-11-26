@@ -10,8 +10,8 @@ import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/quantity_stepper.dart';
+import '../../data/data_sources/app_catalog.dart';
 import '../../data/models/cart_item_model.dart';
-import '../../data/models/product_model.dart';
 import '../auth/login_screen.dart';
 import '../checkout/checkout_screen.dart';
 
@@ -19,27 +19,42 @@ class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
 
   List<CartItem> _getDemoItems() {
-    return List.generate(
-      4,
-      (i) => CartItem(
-        id: 'cart_demo_$i',
-        product: Product(
-          id: 'demo_shoe_$i',
-          title: 'New Year Special Shoe',
-          currentPrice: 100.0,
-          photos: const ['assets/images/shoe.png'],
-          colors: const ['Red'],
-          sizes: const ['X'],
-        ),
+    final shoe = AppCatalog.getById('fash_crafty_shoe_special') ?? AppCatalog.products.first;
+    final mac = AppCatalog.getById('681372b57aff1010848eea4c') ?? AppCatalog.products[0];
+    final book = AppCatalog.getById('6812554eea40bfc6edc673c1') ?? AppCatalog.products[10];
+    return [
+      CartItem(
+        id: 'cart_demo_shoe',
+        product: shoe,
         quantity: 1,
-        unitPrice: 100.0,
+        unitPrice: shoe.currentPrice > 0 ? shoe.currentPrice : 100.0,
         color: 'Red',
-        size: 'X',
+        size: '42',
       ),
-    );
+      CartItem(
+        id: 'cart_demo_mac',
+        product: mac,
+        quantity: 1,
+        unitPrice: mac.currentPrice > 0 ? mac.currentPrice : 699.0,
+        color: 'Space Gray',
+        size: '512GB',
+      ),
+      CartItem(
+        id: 'cart_demo_book',
+        product: book,
+        quantity: 1,
+        unitPrice: book.currentPrice > 0 ? book.currentPrice : 10.0,
+        color: 'Hardcover',
+        size: 'Standard',
+      ),
+    ];
   }
 
   void _handleCheckout(BuildContext context) {
+    final cart = Get.find<CartController>();
+    if (cart.items.isEmpty) {
+      cart.items.assignAll(_getDemoItems());
+    }
     if (!SessionStore.hasToken) {
       Get.bottomSheet(
         Container(

@@ -102,4 +102,21 @@ class Product {
       rating: Json.dbl(j['rating'] ?? j['average_rating'] ?? j['avg_rating']),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        '_id': id,
+        'title': title,
+        'slug': slug,
+        'description': description,
+        'brand': brand,
+        'category': categoryId,
+        'categoryTitle': categoryTitle,
+        'photos': photos,
+        'colors': colors,
+        'sizes': sizes,
+        'tags': tags,
+        'current_price': currentPrice,
+        'regular_price': regularPrice,
+        'rating': rating,
+      };
 }

@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/nav_controller.dart';
 import '../../controllers/wishlist_controller.dart';
-import '../../data/models/product_model.dart';
+import '../../data/data_sources/app_catalog.dart';
 import '../../data/models/wishlist_item_model.dart';
 import '../shared/product_card.dart';
 
@@ -11,18 +11,12 @@ class WishlistScreen extends StatelessWidget {
   const WishlistScreen({super.key});
 
   List<WishlistItem> _getDemoItems() {
+    final list = AppCatalog.products.take(12).toList();
     return List.generate(
-      12,
+      list.length,
       (i) => WishlistItem(
-        id: 'wish_demo_$i',
-        product: Product(
-          id: 'demo_shoe_$i',
-          title: 'New Year Special Shoe',
-          currentPrice: 100.0,
-          regularPrice: 150.0,
-          rating: 4.8,
-          photos: const ['assets/images/shoe.png'],
-        ),
+        id: 'wish_demo_${list[i].id}',
+        product: list[i],
       ),
     );
   }

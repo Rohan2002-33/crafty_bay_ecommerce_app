@@ -1,4 +1,5 @@
 import '../../core/utils/json_helper.dart';
+import '../data_sources/app_catalog.dart';
 import 'product_model.dart';
 
 class CartItem {
@@ -32,18 +33,27 @@ class CartItem {
   factory CartItem.fromJson(Map<String, dynamic> j) {
     final raw = j['product'];
     final product = raw is Map
-        ? Product.fromJson(Json.map(raw))
-        : Product.idOnly(Json.str(raw));
+        ? AppCatalog.sanitize(Product.fromJson(Json.map(raw)))
+        : (AppCatalog.getById(Json.str(raw)) ?? Product.idOnly(Json.str(raw)));
     final unit = product.currentPrice > 0
         ? product.currentPrice
-        : Json.dbl(j['price'] ?? j['unit_price']);
+        : Json.dbl(j['price'] ?? j['unit_price'] ?? j['unitPrice']);
     return CartItem(
       id: Json.id(j),
       product: product,
       quantity: Json.integer(j['quantity'], 1),
-      unitPrice: unit,
+      unitPrice: unit > 0 ? unit : 100.0,
       color: Json.str(j['color']),
       size: Json.str(j['size']),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'product': product.toJson(),
+        'quantity': quantity,
+        'unitPrice': unitPrice,
+        'color': color,
+        'size': size,
+      };
 }

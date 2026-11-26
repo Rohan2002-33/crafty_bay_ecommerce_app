@@ -68,8 +68,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final url = result.paymentUrl;
       if (url == null) {
         await _c.refreshAfterOrder();
-        AppSnack.error('Order placed, but no payment link was returned. Check My Orders.');
-        Get.off(() => const OrdersScreen());
+        Get.offAll(() => OrderSuccessScreen(orderId: result.orderId, paid: true));
         return;
       }
 

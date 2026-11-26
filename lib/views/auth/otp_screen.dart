@@ -85,12 +85,15 @@ class _OtpScreenState extends State<OtpScreen> {
       }
     } else if (result == OtpResult.needsProfileCompletion) {
       // Proceed directly to Screen 12: Complete Profile!
-      Get.off(
+      final profileRes = await Get.to(
         () => SignUpScreen(
           initialEmail: widget.email,
           redirectToCheckout: widget.redirectToCheckout,
         ),
       );
+      if (profileRes == true && mounted && widget.redirectToCheckout) {
+        Get.back(result: true);
+      }
     } else {
       _pin.clear();
       AppSnack.error('Invalid OTP code. Please use default code 1234');
