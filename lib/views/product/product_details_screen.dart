@@ -70,8 +70,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         ],
       ),
       body: Obx(() {
-        if (_c.isLoading.value) return const LoadingView();
-        final product = _c.product.value ?? _fallbackProduct();
+        if (_c.isLoading.value && _c.product.value == null) {
+          return const LoadingView();
+        }
+        final product = _c.product.value;
+        if (product == null) {
+          return const Center(child: Text('Product details not found'));
+        }
+
         return SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,7 +126,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           )),
                     ],
                     if (product.sizes.isNotEmpty) ...[
-                      _label('Size'),
+                      _label('Size / Variant'),
                       Obx(() => Wrap(
                             spacing: 10,
                             runSpacing: 10,
@@ -135,9 +141,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     ],
                     _label('Description'),
                     Text(
-                      product.description.isEmpty
-                          ? 'Nike sports shoes for men features a comfortable mesh upper and a lightweight Phylon midsole. A rubber outsole provides traction and durability. Great for everyday fitness, running, workouts and active sports wear.'
-                          : product.description,
+                      product.description.isNotEmpty
+                          ? product.description
+                          : 'High-quality authentic product crafted for superior durability, performance, and everyday satisfaction.',
                       style: const TextStyle(
                         color: AppColors.textGrey,
                         height: 1.55,
@@ -152,7 +158,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         );
       }),
       bottomNavigationBar: Obx(() {
-        final product = _c.product.value ?? _fallbackProduct();
+        final product = _c.product.value;
+        if (product == null) return const SizedBox.shrink();
         return _BottomBar(
           price: product.currentPrice * _c.quantity.value,
           isLoading: _c.isAdding.value,
@@ -162,24 +169,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  Product _fallbackProduct() {
-    return Product(
-      id: widget.productId,
-      title: 'Happy New Year Special Deal Save 30%',
-      description:
-          'Nike sports shoes for men features a comfortable mesh upper and a lightweight Phylon midsole. A rubber outsole provides traction and durability. Great for everyday fitness, running, workouts and active sports wear.',
-      photos: const [],
-      colors: const ['#E53935', '#1E88E5', '#757575', '#212121'],
-      sizes: const ['S', 'M', 'L', 'XL', 'XXL'],
-      currentPrice: 1000.0,
-      regularPrice: 1300.0,
-      rating: 4.8,
-    );
-  }
-
   Widget _gallery(Product product) {
-    final photos = product.photos.isEmpty ? [''] : product.photos;
+    final photos = product.photos.isNotEmpty ? product.photos : [''];
     final count = photos.length;
+    final isShoe = product.title.toLowerCase().contains('shoe') ||
+        product.photos.any((p) => p.contains('shoe'));
+
     return Container(
       height: 250,
       width: double.infinity,
@@ -191,35 +186,45 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             itemCount: count,
             onPageChanged: (i) => setState(() => _imageIndex = i),
             itemBuilder: (_, i) => Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               child: photos[i].isNotEmpty
-                  ? AppNetworkImage(url: photos[i], fit: BoxFit.contain, useShoeFallback: true)
-                  : Image.asset(AppAssets.shoe, fit: BoxFit.contain),
+                  ? AppNetworkImage(
+                      url: photos[i],
+                      fit: BoxFit.contain,
+                      fallbackAsset: isShoe ? AppAssets.shoe : null,
+                    )
+                  : (isShoe
+                      ? Image.asset(AppAssets.shoe, fit: BoxFit.contain)
+                      : Container(
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.inventory_2_outlined, size: 50, color: AppColors.primary),
+                        )),
             ),
           ),
-          Positioned(
-            bottom: 12,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                count > 1 ? count : 4,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  height: 7,
-                  width: i == _imageIndex ? 18 : 7,
-                  decoration: BoxDecoration(
-                    color: i == _imageIndex
-                        ? AppColors.primary
-                        : AppColors.primary.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(4),
+          if (count > 1)
+            Positioned(
+              bottom: 12,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  count,
+                  (i) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    height: 7,
+                    width: i == _imageIndex ? 18 : 7,
+                    decoration: BoxDecoration(
+                      color: i == _imageIndex
+                          ? AppColors.primary
+                          : AppColors.primary.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -296,25 +301,48 @@ class _ColorChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = ColorParser.parse(value) ?? Colors.grey;
-    final isLight = color.computeLuminance() > 0.6;
+    final color = ColorParser.parse(value);
 
+    if (color != null) {
+      final isLight = color.computeLuminance() > 0.6;
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: selected ? AppColors.primary : Colors.black12,
+              width: selected ? 2.5 : 1,
+            ),
+          ),
+          child: selected
+              ? Icon(Icons.check, size: 18, color: isLight ? Colors.black : Colors.white)
+              : null,
+        ),
+      );
+    }
+
+    // Text color badge if named color
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 32,
-        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: selected ? AppColors.primary : Colors.black12,
-            width: selected ? 2.5 : 1,
+          color: selected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: selected ? AppColors.primary : AppColors.border),
+        ),
+        child: Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.textDark,
           ),
         ),
-        child: selected
-            ? Icon(Icons.check, size: 18, color: isLight ? Colors.black : Colors.white)
-            : null,
       ),
     );
   }
@@ -336,11 +364,11 @@ class _SizeChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 34,
-        height: 34,
+        constraints: const BoxConstraints(minWidth: 36),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : Colors.white,
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.border,
             width: 1.2,

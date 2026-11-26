@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/cart_controller.dart';
 import '../../controllers/nav_controller.dart';
+import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/storage/session_store.dart';
 import '../../core/utils/formatters.dart';
@@ -26,6 +27,7 @@ class CartScreen extends StatelessWidget {
           id: 'demo_shoe_$i',
           title: 'New Year Special Shoe',
           currentPrice: 100.0,
+          photos: const ['assets/images/shoe.png'],
           colors: const ['Red'],
           sizes: const ['X'],
         ),
@@ -202,7 +204,10 @@ class _CartItemTile extends StatelessWidget {
             child: AppNetworkImage(
               url: item.product.thumbnail,
               fit: BoxFit.contain,
-              useShoeFallback: true,
+              fallbackAsset: (item.product.title.toLowerCase().contains('shoe') ||
+                      item.product.photos.any((p) => p.contains('shoe')))
+                  ? AppAssets.shoe
+                  : null,
             ),
           ),
           const SizedBox(width: 12),

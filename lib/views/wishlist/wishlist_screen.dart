@@ -21,6 +21,7 @@ class WishlistScreen extends StatelessWidget {
           currentPrice: 100.0,
           regularPrice: 150.0,
           rating: 4.8,
+          photos: const ['assets/images/shoe.png'],
         ),
       ),
     );

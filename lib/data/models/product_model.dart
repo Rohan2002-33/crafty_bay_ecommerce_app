@@ -7,6 +7,8 @@ class Product {
     this.slug = '',
     this.description = '',
     this.brand = '',
+    this.categoryId = '',
+    this.categoryTitle = '',
     this.photos = const [],
     this.colors = const [],
     this.sizes = const [],
@@ -21,6 +23,8 @@ class Product {
   final String slug;
   final String description;
   final String brand;
+  final String categoryId;
+  final String categoryTitle;
   final List<String> photos;
   final List<String> colors;
   final List<String> sizes;
@@ -34,6 +38,40 @@ class Product {
 
   factory Product.idOnly(String id) => Product(id: id, title: 'Product');
 
+  Product copyWith({
+    String? id,
+    String? title,
+    String? slug,
+    String? description,
+    String? brand,
+    String? categoryId,
+    String? categoryTitle,
+    List<String>? photos,
+    List<String>? colors,
+    List<String>? sizes,
+    List<String>? tags,
+    double? currentPrice,
+    double? regularPrice,
+    double? rating,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      slug: slug ?? this.slug,
+      description: description ?? this.description,
+      brand: brand ?? this.brand,
+      categoryId: categoryId ?? this.categoryId,
+      categoryTitle: categoryTitle ?? this.categoryTitle,
+      photos: photos ?? this.photos,
+      colors: colors ?? this.colors,
+      sizes: sizes ?? this.sizes,
+      tags: tags ?? this.tags,
+      currentPrice: currentPrice ?? this.currentPrice,
+      regularPrice: regularPrice ?? this.regularPrice,
+      rating: rating ?? this.rating,
+    );
+  }
+
   factory Product.fromJson(Map<String, dynamic> j) {
     List<String> strings(dynamic v) => Json.list(v)
         .map((e) => e is Map ? Json.str(e['url']) : Json.str(e))
@@ -41,12 +79,20 @@ class Product {
         .toList();
 
     final brandRaw = j['brand'];
+    final categoryRaw = j['category'];
+
     return Product(
       id: Json.id(j),
       title: Json.str(j['title'] ?? j['name'], 'Untitled product'),
       slug: Json.str(j['slug']),
       description: Json.str(j['description']),
       brand: brandRaw is Map ? Json.str(brandRaw['title']) : '',
+      categoryId: categoryRaw is Map
+          ? Json.str(categoryRaw['_id'])
+          : Json.str(categoryRaw),
+      categoryTitle: categoryRaw is Map
+          ? Json.str(categoryRaw['title'])
+          : '',
       photos: strings(j['photos']),
       colors: strings(j['colors']),
       sizes: strings(j['sizes']),

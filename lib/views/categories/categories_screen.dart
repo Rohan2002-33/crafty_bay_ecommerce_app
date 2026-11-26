@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../controllers/home_controller.dart';
 import '../../controllers/nav_controller.dart';
 import '../../core/widgets/state_views.dart';
+import '../../data/data_sources/app_catalog.dart';
 import '../../data/models/category_model.dart';
 import '../shared/category_tile.dart';
 
@@ -11,29 +12,17 @@ class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
 
   List<CategoryModel> _getDisplayCategories(List<CategoryModel> loaded) {
-    if (loaded.length >= 12) return loaded;
-
-    final base = loaded.isNotEmpty
-        ? loaded
-        : const [
-            CategoryModel(id: 'cat_electronics', title: 'Electronics'),
-            CategoryModel(id: 'cat_food', title: 'Food'),
-            CategoryModel(id: 'cat_fashion', title: 'Fashion'),
-            CategoryModel(id: 'cat_furniture', title: 'Furniture'),
-          ];
-
+    final base = loaded.isNotEmpty ? loaded : AppCatalog.categories;
     final list = <CategoryModel>[...base];
-    int counter = 1;
     while (list.length < 16) {
       for (final item in base) {
         if (list.length >= 16) break;
         list.add(CategoryModel(
-          id: '${item.id}_$counter',
+          id: item.id,
           title: item.title,
           icon: item.icon,
         ));
       }
-      counter++;
     }
     return list;
   }

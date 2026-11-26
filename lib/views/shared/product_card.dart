@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/wishlist_controller.dart';
+import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_network_image.dart';
@@ -17,6 +18,8 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wishlist = Get.find<WishlistController>();
+    final isShoe = product.title.toLowerCase().contains('shoe') ||
+        product.photos.any((p) => p.contains('shoe'));
 
     return SizedBox(
       width: width,
@@ -34,13 +37,13 @@ class ProductCard extends StatelessWidget {
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  color: AppColors.primaryLight.withValues(alpha: 0.6),
+                  color: AppColors.primaryLight.withValues(alpha: 0.5),
                   padding: const EdgeInsets.all(8),
                   child: AppNetworkImage(
                     url: product.thumbnail,
                     fit: BoxFit.contain,
                     radius: 8,
-                    useShoeFallback: true,
+                    fallbackAsset: isShoe ? AppAssets.shoe : null,
                   ),
                 ),
               ),

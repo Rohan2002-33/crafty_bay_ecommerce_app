@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../core/constants/app_urls.dart';
 import '../core/network/api_client.dart';
 import '../core/utils/json_helper.dart';
+import '../data/data_sources/app_catalog.dart';
 import '../data/models/category_model.dart';
 import '../data/models/product_model.dart';
 import '../data/models/slide_model.dart';
@@ -25,37 +26,12 @@ class HomeController extends GetxController {
 
   void _populateDefaultData() {
     if (categories.isEmpty) {
-      categories.assignAll(const [
-        CategoryModel(id: 'cat_electronics', title: 'Electronics', icon: ''),
-        CategoryModel(id: 'cat_food', title: 'Food', icon: ''),
-        CategoryModel(id: 'cat_fashion', title: 'Fashion', icon: ''),
-        CategoryModel(id: 'cat_furniture', title: 'Furniture', icon: ''),
-        CategoryModel(id: 'cat_sports', title: 'Sports', icon: ''),
-        CategoryModel(id: 'cat_kids', title: 'Kids', icon: ''),
-        CategoryModel(id: 'cat_beauty', title: 'Beauty', icon: ''),
-        CategoryModel(id: 'cat_appliances', title: 'Appliances', icon: ''),
-      ]);
+      categories.assignAll(AppCatalog.categories);
     }
 
-    final demoProducts = List.generate(
-      8,
-      (i) => Product(
-        id: 'demo_shoe_$i',
-        title: 'New Year Special Shoe ${i + 1}',
-        description:
-            'Nike sports shoes for men features a comfortable mesh upper and a lightweight Phylon midsole. A rubber outsole provides traction and durability.',
-        photos: const [],
-        colors: const ['Red', 'Blue', 'Grey', 'Black'],
-        sizes: const ['S', 'M', 'L', 'XL', 'XXL'],
-        currentPrice: 100.0 + (i * 10),
-        regularPrice: 150.0 + (i * 10),
-        rating: 4.8,
-      ),
-    );
-
-    if (popular.isEmpty) popular.assignAll(demoProducts);
-    if (special.isEmpty) special.assignAll(demoProducts.reversed.toList());
-    if (newest.isEmpty) newest.assignAll(demoProducts);
+    if (popular.isEmpty) popular.assignAll(AppCatalog.getByTag('popular'));
+    if (special.isEmpty) special.assignAll(AppCatalog.getByTag('special'));
+    if (newest.isEmpty) newest.assignAll(AppCatalog.getByTag('new'));
   }
 
   Future<void> load() async {
@@ -66,7 +42,7 @@ class HomeController extends GetxController {
       final results = await Future.wait([
         ApiClient.get(AppUrls.slides),
         ApiClient.get(AppUrls.categories),
-        ApiClient.get(AppUrls.products(page: 1, count: 40)),
+        ApiClient.get(AppUrls.products(page: 1, count: 50)),
       ]);
       final slideRes = results[0];
       final categoryRes = results[1];
@@ -76,39 +52,74 @@ class HomeController extends GetxController {
         final loadedSlides = Json.maps(slideRes.data).map(SlideModel.fromJson).toList();
         if (loadedSlides.isNotEmpty) slides.assignAll(loadedSlides);
       }
+
       if (categoryRes.isSuccess && categoryRes.data != null) {
-        final loadedCats = Json.maps(categoryRes.data).map(CategoryModel.fromJson).toList();
-        if (loadedCats.isNotEmpty) categories.assignAll(loadedCats);
+        final loadedCats = Json.maps(categoryRes.data)
+            .map(CategoryModel.fromJson)
+            .where((c) {
+              final title = c.title.trim().toLowerCase();
+              return title.isNotEmpty &&
+                  !title.contains('catfgh') &&
+                  !title.contains('trampolin') &&
+                  !title.contains('asdasd') &&
+                  title != 'new category';
+            })
+            .toList();
+
+        if (loadedCats.isNotEmpty) {
+          // Merge with core categories, keeping unique category titles
+          final seen = <String>{};
+          final merged = <CategoryModel>[];
+          for (final c in AppCatalog.categories) {
+            final t = c.title.toLowerCase();
+            if (seen.add(t)) merged.add(c);
+          }
+          for (final c in loadedCats) {
+            final t = c.title.toLowerCase();
+            if (seen.add(t)) merged.add(c);
+          }
+          categories.assignAll(merged);
+        } else {
+          categories.assignAll(AppCatalog.categories);
+        }
       }
 
-      final all = (productRes.isSuccess && productRes.data != null)
-          ? Json.maps(productRes.data).map(Product.fromJson).toList()
+      final rawProducts = (productRes.isSuccess && productRes.data != null)
+          ? Json.maps(productRes.data)
+              .map(Product.fromJson)
+              .where((p) => !AppCatalog.isGarbageProduct(p))
+              .map(AppCatalog.sanitize)
+              .toList()
           : <Product>[];
 
-      if (all.isNotEmpty) {
-        final tagged = await Future.wait([
-          _byTag('popular'),
-          _byTag('special'),
-          _byTag('new'),
-        ]);
-        popular.assignAll(tagged[0].isNotEmpty ? tagged[0] : all.take(10));
-        special.assignAll(tagged[1].isNotEmpty ? tagged[1] : all.skip(5).take(10));
-        newest.assignAll(tagged[2].isNotEmpty ? tagged[2] : all.reversed.take(10));
-      }
+      final popularCurated = AppCatalog.getByTag('popular');
+      final specialCurated = AppCatalog.getByTag('special');
+      final newCurated = AppCatalog.getByTag('new');
+
+      final popularApi = rawProducts.where((p) => p.tags.contains('popular') || p.tags.contains('special')).toList();
+      final specialApi = rawProducts.where((p) => p.tags.contains('special')).toList();
+      final newApi = rawProducts.where((p) => p.tags.contains('new')).toList();
+
+      popular.assignAll(_mergeProducts(popularCurated, popularApi));
+      special.assignAll(_mergeProducts(specialCurated, specialApi));
+      newest.assignAll(_mergeProducts(newCurated, newApi));
     } catch (_) {
-      // Keep demo data intact if offline
+      // Keep curated catalog data intact if offline
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<List<Product>> _byTag(String tag) async {
-    try {
-      final res = await ApiClient.get(AppUrls.products(tag: tag, count: 10));
-      if (!res.isSuccess) return [];
-      return Json.maps(res.data).map(Product.fromJson).toList();
-    } catch (_) {
-      return [];
+  List<Product> _mergeProducts(List<Product> primary, List<Product> secondary) {
+    final list = <Product>[...primary];
+    final seen = list.map((p) => p.title.toLowerCase().trim()).toSet();
+    for (final p in secondary) {
+      final t = p.title.toLowerCase().trim();
+      if (!seen.contains(t)) {
+        list.add(p);
+        seen.add(t);
+      }
     }
+    return list;
   }
 }

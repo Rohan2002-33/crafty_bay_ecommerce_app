@@ -53,7 +53,6 @@ class CategoryTile extends StatelessWidget {
                 ? AppNetworkImage(
                     url: category.icon,
                     fit: BoxFit.contain,
-                    useShoeFallback: false,
                   )
                 : Icon(
                     _getIconForCategory(category.title),

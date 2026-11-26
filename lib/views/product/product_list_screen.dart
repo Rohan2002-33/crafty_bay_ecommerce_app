@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../controllers/product_list_controller.dart';
 import '../../core/widgets/app_bottom_nav_bar.dart';
 import '../../core/widgets/state_views.dart';
+import '../../data/data_sources/app_catalog.dart';
 import '../../data/models/product_model.dart';
 import '../shared/product_card.dart';
 
@@ -57,16 +58,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   List<Product> _getDemoProducts() {
-    return List.generate(
-      12,
-      (i) => Product(
-        id: 'demo_list_shoe_$i',
-        title: 'New Year Special Shoe',
-        currentPrice: 100.0,
-        regularPrice: 150.0,
-        rating: 4.8,
-      ),
-    );
+    final list = AppCatalog.getByCategory(widget.categoryId ?? widget.title);
+    return list.isNotEmpty ? list : AppCatalog.products;
   }
 
   @override

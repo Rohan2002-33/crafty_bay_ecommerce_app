@@ -48,6 +48,7 @@ class ApiClient {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       if (hadToken) 'token': SessionStore.token!,
+      if (hadToken) 'Authorization': 'Bearer ${SessionStore.token!}',
     };
 
     try {
