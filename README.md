@@ -1,17 +1,22 @@
-# crafty_bay
+# Crafty Bay – E-Commerce App
 
-A new Flutter project.
+Flutter e-commerce app built for the Ostad Flutter course (Modules 21 & 22).
 
-## Getting Started
+## Features
+- Email/password sign up, OTP verification, login, persistent session
+- Home with banner slider, categories, popular / special / new products, search
+- Product details with image gallery, color & size selection, reviews
+- Cart with quantity update and delete, wish list
+- Checkout with address form and order summary
+- Cash on Delivery and online payment (gateway WebView) with transaction handling
+- Order history, order details, order cancellation, profile editing
 
-This project is a starting point for a Flutter application.
+## Tech
+Flutter, GetX, http, shared_preferences, cached_network_image, webview_flutter
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Run
+```bash
+flutter pub get
+flutter run
+```
+API: https://ecom-rs8e.onrender.com/api (free server: first request may take up to a minute).
