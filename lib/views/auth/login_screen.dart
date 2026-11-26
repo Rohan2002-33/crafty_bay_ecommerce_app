@@ -45,9 +45,20 @@ class _LoginScreenState extends State<LoginScreen> {
       case LoginResult.success:
         Get.offAllNamed('/main');
       case LoginResult.needsVerification:
-        AppSnack.error('Please verify your email first.');
-        _auth.resendOtp(email);
-        Get.to(() => OtpScreen(email: email, password: password));
+        final otpSent = await _auth.resendOtp(email);
+        if (!mounted) return;
+        if (otpSent) {
+          AppSnack.success('Verification code sent. Check your email.');
+        } else {
+          AppSnack.error(_auth.lastError);
+        }
+        Get.to(
+          () => OtpScreen(
+            email: email,
+            password: password,
+            initialOtpSendFailed: !otpSent,
+          ),
+        );
       case LoginResult.failed:
         AppSnack.error(_auth.lastError);
     }
@@ -101,19 +112,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       hintText: 'Password',
                       prefixIcon: const Icon(Icons.lock_outline_rounded),
                       suffixIcon: IconButton(
-                        icon: Icon(_obscure
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined),
+                        icon: Icon(
+                          _obscure
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
                         onPressed: () => setState(() => _obscure = !_obscure),
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Obx(() => PrimaryButton(
-                        label: 'Sign In',
-                        isLoading: _auth.isLoading.value,
-                        onPressed: _submit,
-                      )),
+                  Obx(
+                    () => PrimaryButton(
+                      label: 'Sign In',
+                      isLoading: _auth.isLoading.value,
+                      onPressed: _submit,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

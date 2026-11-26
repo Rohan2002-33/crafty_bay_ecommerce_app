@@ -32,7 +32,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   void dispose() {
     for (final c in [
-      _firstName, _lastName, _email, _password, _phone, _city, _address,
+      _firstName,
+      _lastName,
+      _email,
+      _password,
+      _phone,
+      _city,
+      _address,
     ]) {
       c.dispose();
     }
@@ -55,12 +61,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
     if (!mounted) return;
 
-    if (ok) {
-      AppSnack.success('Account created. Enter the OTP we sent you.');
-      Get.off(() => OtpScreen(email: email, password: _password.text));
-    } else {
+    if (!ok) {
       AppSnack.error(_auth.lastError);
+      return;
     }
+
+    final otpSent = await _auth.resendOtp(email);
+    if (!mounted) return;
+
+    if (otpSent) {
+      AppSnack.success('Verification code sent. Check your email.');
+    } else {
+      AppSnack.error(
+        'Account created, but the verification code could not be sent: '
+        '${_auth.lastError}',
+      );
+    }
+    Get.off(
+      () => OtpScreen(
+        email: email,
+        password: _password.text,
+        initialOtpSendFailed: !otpSent,
+      ),
+    );
   }
 
   @override
@@ -90,13 +113,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   style: TextStyle(color: AppColors.textGrey),
                 ),
                 const SizedBox(height: 24),
-                _field(_firstName, 'First Name',
-                    validator: (v) => Validators.required(v, 'First name')),
-                _field(_lastName, 'Last Name',
-                    validator: (v) => Validators.required(v, 'Last name')),
-                _field(_email, 'Email Address',
-                    type: TextInputType.emailAddress,
-                    validator: Validators.email),
+                _field(
+                  _firstName,
+                  'First Name',
+                  validator: (v) => Validators.required(v, 'First name'),
+                ),
+                _field(
+                  _lastName,
+                  'Last Name',
+                  validator: (v) => Validators.required(v, 'Last name'),
+                ),
+                _field(
+                  _email,
+                  'Email Address',
+                  type: TextInputType.emailAddress,
+                  validator: Validators.email,
+                ),
                 TextFormField(
                   controller: _password,
                   obscureText: _obscure,
@@ -105,26 +137,41 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   decoration: InputDecoration(
                     hintText: 'Password',
                     suffixIcon: IconButton(
-                      icon: Icon(_obscure
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined),
+                      icon: Icon(
+                        _obscure
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
                       onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                   ),
                 ),
                 const SizedBox(height: 14),
-                _field(_phone, 'Mobile',
-                    type: TextInputType.phone, validator: Validators.phone),
-                _field(_city, 'City',
-                    validator: (v) => Validators.required(v, 'City')),
-                _field(_address, 'Shipping Address',
-                    lines: 3, action: TextInputAction.done),
+                _field(
+                  _phone,
+                  'Mobile',
+                  type: TextInputType.phone,
+                  validator: Validators.phone,
+                ),
+                _field(
+                  _city,
+                  'City',
+                  validator: (v) => Validators.required(v, 'City'),
+                ),
+                _field(
+                  _address,
+                  'Shipping Address',
+                  lines: 3,
+                  action: TextInputAction.done,
+                ),
                 const SizedBox(height: 10),
-                Obx(() => PrimaryButton(
-                      label: 'Complete',
-                      isLoading: _auth.isLoading.value,
-                      onPressed: _submit,
-                    )),
+                Obx(
+                  () => PrimaryButton(
+                    label: 'Complete',
+                    isLoading: _auth.isLoading.value,
+                    onPressed: _submit,
+                  ),
+                ),
               ],
             ),
           ),

@@ -1,3 +1,4 @@
+import 'views/main/main_nav_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -20,6 +21,7 @@ class CraftyBayApp extends StatelessWidget {
       getPages: [
         GetPage(name: '/', page: () => const SplashScreen()),
         GetPage(name: '/login', page: () => const LoginScreen()),
+        GetPage(name: '/main', page: () => const MainNavScreen()),
       ],
     );
   }

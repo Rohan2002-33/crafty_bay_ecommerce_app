@@ -12,10 +12,16 @@ import '../../core/utils/app_snack.dart';
 import '../../core/widgets/primary_button.dart';
 
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({super.key, required this.email, required this.password});
+  const OtpScreen({
+    super.key,
+    required this.email,
+    required this.password,
+    this.initialOtpSendFailed = false,
+  });
 
   final String email;
   final String password;
+  final bool initialOtpSendFailed;
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -28,11 +34,17 @@ class _OtpScreenState extends State<OtpScreen> {
   final AuthController _auth = Get.find();
   Timer? _timer;
   int _remaining = _expirySeconds;
+  bool _otpSent = true;
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
+    if (widget.initialOtpSendFailed) {
+      _remaining = 0;
+      _otpSent = false;
+    } else {
+      _startTimer(reset: false);
+    }
   }
 
   @override
@@ -42,9 +54,14 @@ class _OtpScreenState extends State<OtpScreen> {
     super.dispose();
   }
 
-  void _startTimer() {
+  void _startTimer({bool reset = true}) {
     _timer?.cancel();
-    setState(() => _remaining = _expirySeconds);
+    if (reset) {
+      setState(() {
+        _remaining = _expirySeconds;
+        _otpSent = true;
+      });
+    }
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (_remaining <= 1) {
         t.cancel();
@@ -152,13 +169,25 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                 )
               else
-                const Text(
-                  'The code has expired',
-                  style: TextStyle(color: AppColors.danger),
+                Text(
+                  _otpSent
+                      ? 'The code has expired'
+                      : 'Could not send the verification code',
+                  style: const TextStyle(color: AppColors.danger),
                 ),
-              TextButton(
-                onPressed: _remaining == 0 ? _resend : null,
-                child: const Text('Resend Code'),
+              Obx(
+                () => TextButton(
+                  onPressed: _remaining == 0 && !_auth.isLoading.value
+                      ? _resend
+                      : null,
+                  child: _auth.isLoading.value
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Resend Code'),
+                ),
               ),
             ],
           ),

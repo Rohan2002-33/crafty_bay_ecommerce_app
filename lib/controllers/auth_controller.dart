@@ -57,15 +57,18 @@ class AuthController extends GetxController {
     String address = '',
   }) async {
     isLoading.value = true;
-    final res = await ApiClient.post(AppUrls.signup, body: {
-      'first_name': firstName,
-      'last_name': lastName,
-      'email': email,
-      'password': password,
-      'phone': phone,
-      'city': city,
-      if (address.isNotEmpty) 'address': address,
-    });
+    final res = await ApiClient.post(
+      AppUrls.signup,
+      body: {
+        'first_name': firstName,
+        'last_name': lastName,
+        'email': email,
+        'password': password,
+        'phone': phone,
+        'city': city,
+        if (address.isNotEmpty) 'address': address,
+      },
+    );
     isLoading.value = false;
     if (!res.isSuccess) lastError = res.errorMessage;
     return res.isSuccess;
@@ -101,9 +104,17 @@ class AuthController extends GetxController {
   }
 
   Future<bool> resendOtp(String email) async {
-    final res = await ApiClient.post(AppUrls.resendOtp, body: {'email': email});
-    if (!res.isSuccess) lastError = res.errorMessage;
-    return res.isSuccess;
+    isLoading.value = true;
+    try {
+      final res = await ApiClient.post(
+        AppUrls.resendOtp,
+        body: {'email': email},
+      );
+      if (!res.isSuccess) lastError = res.errorMessage;
+      return res.isSuccess;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> fetchProfile() async {
@@ -136,7 +147,11 @@ class AuthController extends GetxController {
   }
 
   Future<bool> _storeTokenFrom(dynamic data) async {
-    final token = Json.findString(data, ['token', 'accessToken', 'access_token']);
+    final token = Json.findString(data, [
+      'token',
+      'accessToken',
+      'access_token',
+    ]);
     if (token == null) return false;
     await SessionStore.saveToken(token);
     return true;
