@@ -9,7 +9,9 @@ import 'package:crafty_bay/views/auth/login_screen.dart';
 import 'package:crafty_bay/views/auth/otp_screen.dart';
 import 'package:crafty_bay/views/auth/signup_screen.dart';
 import 'package:crafty_bay/views/auth/splash_screen.dart';
+import 'package:crafty_bay/views/cart/cart_screen.dart';
 import 'package:crafty_bay/views/shared/product_card.dart';
+import 'package:crafty_bay/views/wishlist/wishlist_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -161,6 +163,29 @@ void main() {
     expect(find.text('\$100'), findsOneWidget);
     expect(find.text('4.8'), findsOneWidget);
     expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+  });
+
+  testWidgets('CartScreen renders Cart title and Checkout button', (tester) async {
+    await tester.pumpWidget(
+      const GetMaterialApp(
+        home: CartScreen(),
+      ),
+    );
+
+    expect(find.text('Cart'), findsOneWidget);
+    expect(find.text('Checkout'), findsOneWidget);
+    expect(find.text('Total Price'), findsOneWidget);
+  });
+
+  testWidgets('WishlistScreen renders Wish List title and grid items', (tester) async {
+    await tester.pumpWidget(
+      const GetMaterialApp(
+        home: WishlistScreen(),
+      ),
+    );
+
+    expect(find.text('Wish List'), findsOneWidget);
+    expect(find.byType(ProductCard), findsWidgets);
   });
 }
 
