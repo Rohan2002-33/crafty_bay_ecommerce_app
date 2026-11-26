@@ -29,19 +29,33 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
-              child: Center(child: SvgPicture.asset(AppAssets.logo, width: 170)),
+              child: Center(
+                child: SvgPicture.asset(
+                  AppAssets.logo,
+                  width: 160,
+                  placeholderBuilder: (_) => Image.asset(AppAssets.logo, width: 160),
+                ),
+              ),
             ),
-            const CircularProgressIndicator(strokeWidth: 3),
+            const CircularProgressIndicator(
+              strokeWidth: 3,
+              color: AppColors.primary,
+            ),
             const SizedBox(height: 16),
             const Text(
               'Version 1.0',
-              style: TextStyle(color: AppColors.textGrey, fontSize: 13),
+              style: TextStyle(
+                color: AppColors.textGrey,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
           ],
         ),
       ),

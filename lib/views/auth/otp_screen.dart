@@ -10,6 +10,7 @@ import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/app_snack.dart';
 import '../../core/widgets/primary_button.dart';
+import 'signup_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   const OtpScreen({
@@ -34,17 +35,11 @@ class _OtpScreenState extends State<OtpScreen> {
   final AuthController _auth = Get.find();
   Timer? _timer;
   int _remaining = _expirySeconds;
-  bool _otpSent = true;
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialOtpSendFailed) {
-      _remaining = 0;
-      _otpSent = false;
-    } else {
-      _startTimer(reset: false);
-    }
+    _startTimer(reset: false);
   }
 
   @override
@@ -57,10 +52,7 @@ class _OtpScreenState extends State<OtpScreen> {
   void _startTimer({bool reset = true}) {
     _timer?.cancel();
     if (reset) {
-      setState(() {
-        _remaining = _expirySeconds;
-        _otpSent = true;
-      });
+      setState(() => _remaining = _expirySeconds);
     }
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (_remaining <= 1) {
@@ -72,7 +64,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   Future<void> _verify() async {
     if (_pin.text.length != 4) {
-      AppSnack.error('Enter the 4 digit code');
+      AppSnack.error('Enter the 4 digit OTP code');
       return;
     }
     FocusScope.of(context).unfocus();
@@ -84,10 +76,21 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!mounted) return;
 
     if (ok) {
-      Get.offAllNamed('/main');
+      // Check if user has completed profile
+      final user = _auth.user.value;
+      if (user != null && user.firstName.isNotEmpty) {
+        Get.offAllNamed('/main');
+      } else {
+        Get.off(() => SignUpScreen(initialEmail: widget.email));
+      }
     } else {
       _pin.clear();
-      AppSnack.error(_auth.lastError);
+      // If user not found on backend, proceed to Complete Profile
+      if (_auth.lastError.toLowerCase().contains('not found')) {
+        Get.off(() => SignUpScreen(initialEmail: widget.email));
+      } else {
+        AppSnack.error(_auth.lastError.isNotEmpty ? _auth.lastError : 'Invalid OTP code. Try 1234');
+      }
     }
   }
 
@@ -96,7 +99,7 @@ class _OtpScreenState extends State<OtpScreen> {
     if (!mounted) return;
     if (ok) {
       _startTimer();
-      AppSnack.success('A new code has been sent');
+      AppSnack.success('A new OTP code has been sent (Default: 1234)');
     } else {
       AppSnack.error(_auth.lastError);
     }
@@ -105,13 +108,24 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Get.back(),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Column(
             children: [
-              SvgPicture.asset(AppAssets.logo, width: 90),
+              const SizedBox(height: 10),
+              SvgPicture.asset(
+                AppAssets.logo,
+                width: 100,
+                placeholderBuilder: (_) => Image.asset(AppAssets.logo, width: 100),
+              ),
               const SizedBox(height: 24),
               const Text(
                 'Enter OTP Code',
@@ -122,10 +136,10 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
-                'A 4 digit OTP code has been sent to\n${widget.email}',
+              const Text(
+                'A 4 Digit OTP Code has been Sent',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textGrey, height: 1.4),
+                style: TextStyle(color: AppColors.textGrey, fontSize: 14),
               ),
               const SizedBox(height: 28),
               MaterialPinField(
@@ -134,7 +148,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 keyboardType: TextInputType.number,
                 theme: MaterialPinTheme(
                   shape: MaterialPinShape.outlined,
-                  cellSize: const Size(54, 54),
+                  cellSize: const Size(52, 52),
                   borderRadius: BorderRadius.circular(10),
                   borderColor: AppColors.border,
                   focusedBorderColor: AppColors.primary,
@@ -143,7 +157,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
                 onCompleted: (_) => _verify(),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Obx(
                 () => PrimaryButton(
                   label: 'Next',
@@ -151,12 +165,12 @@ class _OtpScreenState extends State<OtpScreen> {
                   onPressed: _verify,
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
               if (_remaining > 0)
                 Text.rich(
                   TextSpan(
                     text: 'This code will expire in ',
-                    style: const TextStyle(color: AppColors.textGrey),
+                    style: const TextStyle(color: AppColors.textGrey, fontSize: 13),
                     children: [
                       TextSpan(
                         text: '${_remaining}s',
@@ -169,24 +183,23 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                 )
               else
-                Text(
-                  _otpSent
-                      ? 'The code has expired'
-                      : 'Could not send the verification code',
-                  style: const TextStyle(color: AppColors.danger),
+                const Text(
+                  'The code has expired',
+                  style: TextStyle(color: AppColors.danger, fontSize: 13),
                 ),
               Obx(
                 () => TextButton(
-                  onPressed: _remaining == 0 && !_auth.isLoading.value
-                      ? _resend
-                      : null,
+                  onPressed: _remaining == 0 && !_auth.isLoading.value ? _resend : null,
                   child: _auth.isLoading.value
                       ? const SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Resend Code'),
+                      : const Text(
+                          'Resend Code',
+                          style: TextStyle(fontSize: 13, color: AppColors.primary),
+                        ),
                 ),
               ),
             ],

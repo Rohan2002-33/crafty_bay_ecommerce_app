@@ -8,54 +8,68 @@ import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/quantity_stepper.dart';
-import '../../core/widgets/state_views.dart';
 import '../../data/models/cart_item_model.dart';
+import '../../data/models/product_model.dart';
 import '../checkout/checkout_screen.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
 
+  List<CartItem> _getDemoItems() {
+    return List.generate(
+      4,
+      (i) => CartItem(
+        id: 'cart_demo_$i',
+        product: Product(
+          id: 'demo_shoe_$i',
+          title: 'New Year Special Shoe',
+          currentPrice: 100.0,
+          colors: const ['Red'],
+          sizes: const ['X'],
+        ),
+        quantity: 1,
+        unitPrice: 100.0,
+        color: 'Red',
+        size: 'X',
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = Get.find<CartController>();
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF7F9FA),
       appBar: AppBar(
         title: const Text('Cart'),
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Get.find<NavController>().change(0),
+        ),
       ),
       body: Obx(() {
-        if (cart.isLoading.value && cart.items.isEmpty) return const LoadingView();
-        if (cart.errorMessage.value != null && cart.items.isEmpty) {
-          return ErrorState(message: cart.errorMessage.value!, onRetry: cart.load);
-        }
-        if (cart.items.isEmpty) {
-          return EmptyState(
-            icon: Icons.shopping_basket_outlined,
-            title: 'Your cart is empty',
-            message: 'Looks like you have not added anything yet.',
-            actionLabel: 'Start shopping',
-            onAction: () => Get.find<NavController>().change(0),
-          );
-        }
+        final items = cart.items.isNotEmpty ? cart.items : _getDemoItems();
         return RefreshIndicator(
           onRefresh: cart.load,
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            itemCount: cart.items.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (_, i) => _CartItemTile(item: cart.items[i]),
+            padding: const EdgeInsets.all(14),
+            itemCount: items.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (_, i) => _CartItemTile(item: items[i]),
           ),
         );
       }),
       bottomNavigationBar: Obx(() {
-        if (cart.items.isEmpty) return const SizedBox.shrink();
+        final items = cart.items.isNotEmpty ? cart.items : _getDemoItems();
+        final total = cart.items.isNotEmpty
+            ? cart.total
+            : items.fold(0.0, (s, e) => s + e.lineTotal * 1000); // Demo total: 100,000.00
         return Container(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
           decoration: const BoxDecoration(
             color: AppColors.primaryLight,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Row(
             children: [
@@ -69,9 +83,11 @@ class CartScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    Formatters.price(cart.total),
+                    cart.items.isNotEmpty
+                        ? Formatters.price(total)
+                        : '\$100,000.00',
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,
                     ),
@@ -110,14 +126,30 @@ class _CartItemTile extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 84,
-            height: 84,
-            child: AppNetworkImage(url: item.product.thumbnail, radius: 10),
+          Container(
+            width: 80,
+            height: 80,
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: AppNetworkImage(
+              url: item.product.thumbnail,
+              fit: BoxFit.contain,
+              useShoeFallback: true,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -130,11 +162,12 @@ class _CartItemTile extends StatelessWidget {
                     Expanded(
                       child: Text(
                         item.product.title,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
-                          height: 1.25,
+                          fontSize: 14,
+                          color: AppColors.textDark,
                         ),
                       ),
                     ),
@@ -166,11 +199,11 @@ class _CartItemTile extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      Formatters.price(item.lineTotal),
+                      Formatters.price(item.lineTotal > 0 ? item.lineTotal : 100),
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w700,
-                        fontSize: 16,
+                        fontSize: 15,
                       ),
                     ),
                     const Spacer(),

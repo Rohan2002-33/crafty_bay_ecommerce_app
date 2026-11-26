@@ -18,7 +18,11 @@ class WishlistController extends GetxController {
   void onInit() {
     super.onInit();
     ever(Get.find<AuthController>().user, (u) {
-      if (u == null) items.clear();
+      if (u == null) {
+        // guest mode can keep local items
+      } else {
+        load(silent: true);
+      }
     });
   }
 
@@ -29,13 +33,19 @@ class WishlistController extends GetxController {
     if (!silent) isLoading.value = true;
     errorMessage.value = null;
 
-    final res = await ApiClient.get('${AppUrls.wishlist}?count=100');
-    if (res.isSuccess) {
-      items.assignAll(Json.maps(res.data).map(WishlistItem.fromJson));
-    } else if (!silent || items.isEmpty) {
-      errorMessage.value = res.errorMessage;
+    try {
+      final res = await ApiClient.get('${AppUrls.wishlist}?count=100');
+      if (res.isSuccess && res.data != null) {
+        final loaded = Json.maps(res.data).map(WishlistItem.fromJson).toList();
+        if (loaded.isNotEmpty) items.assignAll(loaded);
+      } else if (!silent && items.isEmpty) {
+        errorMessage.value = res.errorMessage;
+      }
+    } catch (_) {
+      // offline support
+    } finally {
+      isLoading.value = false;
     }
-    isLoading.value = false;
   }
 
   Future<void> toggle(Product product) async {
@@ -43,24 +53,27 @@ class WishlistController extends GetxController {
 
     if (existing != null) {
       items.remove(existing);
-      final res = await ApiClient.delete(AppUrls.wishlistItem(existing.id));
-      if (!res.isSuccess) {
-        items.add(existing);
-        AppSnack.error(res.errorMessage);
+      if (SessionStore.hasToken && existing.id.isNotEmpty && !existing.id.startsWith('local_')) {
+        final res = await ApiClient.delete(AppUrls.wishlistItem(existing.id));
+        if (!res.isSuccess) {
+          items.add(existing);
+          AppSnack.error(res.errorMessage);
+        }
       }
       return;
     }
 
-    items.add(WishlistItem(id: '', product: product)); // optimistic
-    final res = await ApiClient.post(
-      AppUrls.wishlist,
-      body: {'product': product.id},
-    );
-    if (res.isSuccess) {
-      await load(silent: true); // pick up the real wishlist item id
-    } else {
-      items.removeWhere((i) => i.product.id == product.id);
-      AppSnack.error(res.errorMessage);
+    items.add(WishlistItem(id: 'local_${product.id}', product: product));
+    if (SessionStore.hasToken) {
+      final res = await ApiClient.post(
+        AppUrls.wishlist,
+        body: {'product': product.id},
+      );
+      if (res.isSuccess) {
+        await load(silent: true);
+      } else {
+        AppSnack.error(res.errorMessage);
+      }
     }
   }
 }

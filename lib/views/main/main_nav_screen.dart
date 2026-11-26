@@ -6,6 +6,7 @@ import '../../controllers/cart_controller.dart';
 import '../../controllers/home_controller.dart';
 import '../../controllers/nav_controller.dart';
 import '../../controllers/wishlist_controller.dart';
+import '../../core/widgets/app_bottom_nav_bar.dart';
 import '../cart/cart_screen.dart';
 import '../categories/categories_screen.dart';
 import '../home/home_screen.dart';
@@ -20,7 +21,6 @@ class MainNavScreen extends StatefulWidget {
 
 class _MainNavScreenState extends State<MainNavScreen> {
   final NavController _nav = Get.find();
-  final CartController _cart = Get.find();
 
   @override
   void initState() {
@@ -51,36 +51,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
                 WishlistScreen(),
               ],
             ),
-            bottomNavigationBar: NavigationBar(
-              selectedIndex: _nav.index.value,
-              onDestinationSelected: _nav.change,
-              destinations: [
-                const NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home_rounded),
-                  label: 'Home',
-                ),
-                const NavigationDestination(
-                  icon: Icon(Icons.grid_view_outlined),
-                  selectedIcon: Icon(Icons.grid_view_rounded),
-                  label: 'Categories',
-                ),
-                NavigationDestination(
-                  icon: Badge(
-                    isLabelVisible: _cart.itemCount > 0,
-                    label: Text('${_cart.itemCount}'),
-                    child: const Icon(Icons.shopping_basket_outlined),
-                  ),
-                  selectedIcon: const Icon(Icons.shopping_basket_rounded),
-                  label: 'Cart',
-                ),
-                const NavigationDestination(
-                  icon: Icon(Icons.favorite_border_rounded),
-                  selectedIcon: Icon(Icons.favorite_rounded),
-                  label: 'Wish',
-                ),
-              ],
-            ),
+            bottomNavigationBar: const AppBottomNavBar(),
           ),
         ));
   }

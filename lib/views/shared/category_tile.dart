@@ -11,6 +11,26 @@ class CategoryTile extends StatelessWidget {
 
   final CategoryModel category;
 
+  IconData _getIconForCategory(String title) {
+    final lower = title.toLowerCase();
+    if (lower.contains('elect') || lower.contains('tech') || lower.contains('apply')) {
+      return Icons.tv_rounded;
+    } else if (lower.contains('food') || lower.contains('grocer') || lower.contains('fruit')) {
+      return Icons.apple_rounded;
+    } else if (lower.contains('fash') || lower.contains('cloth') || lower.contains('wear')) {
+      return Icons.diamond_outlined;
+    } else if (lower.contains('furn') || lower.contains('bed') || lower.contains('home')) {
+      return Icons.bed_rounded;
+    } else if (lower.contains('sport') || lower.contains('fit') || lower.contains('gym')) {
+      return Icons.fitness_center_rounded;
+    } else if (lower.contains('kid') || lower.contains('toy') || lower.contains('baby')) {
+      return Icons.child_friendly_rounded;
+    } else if (lower.contains('beauty') || lower.contains('cosmetic')) {
+      return Icons.auto_awesome_rounded;
+    }
+    return Icons.category_outlined;
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -24,12 +44,22 @@ class CategoryTile extends StatelessWidget {
           Container(
             width: 64,
             height: 64,
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: AppNetworkImage(url: category.icon, fit: BoxFit.contain),
+            child: category.icon.isNotEmpty && category.icon.startsWith('http')
+                ? AppNetworkImage(
+                    url: category.icon,
+                    fit: BoxFit.contain,
+                    useShoeFallback: false,
+                  )
+                : Icon(
+                    _getIconForCategory(category.title),
+                    size: 32,
+                    color: AppColors.primary,
+                  ),
           ),
           const SizedBox(height: 6),
           SizedBox(

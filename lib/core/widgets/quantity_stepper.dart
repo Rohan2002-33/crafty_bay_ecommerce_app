@@ -23,11 +23,11 @@ class QuantityStepper extends StatelessWidget {
       children: [
         _button(Icons.remove, value > min ? () => onChanged(value - 1) : null),
         SizedBox(
-          width: 34,
+          width: 32,
           child: Center(
             child: Text(
               value.toString().padLeft(2, '0'),
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
             ),
           ),
         ),
@@ -39,17 +39,17 @@ class QuantityStepper extends StatelessWidget {
   Widget _button(IconData icon, VoidCallback? onTap) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(4),
       child: Container(
-        width: 26,
-        height: 26,
+        width: 24,
+        height: 24,
         decoration: BoxDecoration(
           color: onTap != null
               ? AppColors.primary
               : AppColors.primary.withValues(alpha: 0.35),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(4),
         ),
-        child: Icon(icon, size: 16, color: Colors.white),
+        child: Icon(icon, size: 15, color: Colors.white),
       ),
     );
   }

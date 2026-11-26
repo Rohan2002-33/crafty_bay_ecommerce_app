@@ -9,7 +9,6 @@ import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/section_header.dart';
-import '../../core/widgets/state_views.dart';
 import '../../data/models/product_model.dart';
 import '../../data/models/slide_model.dart';
 import '../product/product_list_screen.dart';
@@ -24,6 +23,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final home = Get.find<HomeController>();
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -42,20 +42,8 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _content(HomeController home) {
-    final empty = home.categories.isEmpty && home.popular.isEmpty;
-
-    if (home.isLoading.value && empty) return const _HomeSkeleton();
-
-    if (home.errorMessage.value != null && empty) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          SizedBox(
-            height: 380,
-            child: ErrorState(message: home.errorMessage.value!, onRetry: home.load),
-          ),
-        ],
-      );
+    if (home.isLoading.value && home.categories.isEmpty && home.popular.isEmpty) {
+      return const _HomeSkeleton();
     }
 
     return ListView(
@@ -68,7 +56,7 @@ class HomeScreen extends StatelessWidget {
           onSeeAll: () => Get.find<NavController>().change(1),
         ),
         SizedBox(
-          height: 96,
+          height: 100,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -123,7 +111,11 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
       child: Row(
         children: [
-          SvgPicture.asset(AppAssets.logoNav, height: 30),
+          SvgPicture.asset(
+            AppAssets.logoNav,
+            height: 32,
+            placeholderBuilder: (_) => Image.asset(AppAssets.logoNav, height: 32),
+          ),
           const Spacer(),
           _CircleButton(
             icon: Icons.person_outline_rounded,
@@ -167,11 +159,12 @@ class _CircleButton extends StatelessWidget {
       child: Container(
         width: 36,
         height: 36,
-        decoration: const BoxDecoration(
-          color: AppColors.border,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF2F4F7),
           shape: BoxShape.circle,
+          border: Border.all(color: AppColors.border, width: 0.8),
         ),
-        child: Icon(icon, size: 20, color: AppColors.textGrey),
+        child: Icon(icon, size: 19, color: AppColors.textDark),
       ),
     );
   }
@@ -203,16 +196,18 @@ class _SearchBarState extends State<_SearchBar> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
       child: TextField(
         controller: _controller,
         textInputAction: TextInputAction.search,
         onSubmitted: _search,
         decoration: InputDecoration(
           hintText: 'Search',
+          hintStyle: const TextStyle(color: AppColors.textGrey, fontSize: 14),
           filled: true,
-          fillColor: AppColors.background,
-          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textGrey),
+          fillColor: const Color(0xFFF2F4F7),
+          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textGrey, size: 22),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none,
@@ -220,6 +215,10 @@ class _SearchBarState extends State<_SearchBar> {
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
           ),
         ),
       ),
@@ -251,9 +250,9 @@ class _HomeBannerState extends State<_HomeBanner> {
               ? const _DefaultBanner()
               : _SlideBanner(slide: slides[i]),
           options: CarouselOptions(
-            height: 150,
+            height: 145,
             viewportFraction: 0.92,
-            autoPlay: slides.length > 1,
+            autoPlay: count > 1,
             autoPlayInterval: const Duration(seconds: 4),
             onPageChanged: (i, _) => setState(() => _current = i),
           ),
@@ -266,8 +265,8 @@ class _HomeBannerState extends State<_HomeBanner> {
             (i) => AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               margin: const EdgeInsets.symmetric(horizontal: 3),
-              height: 8,
-              width: i == _current ? 20 : 8,
+              height: 7,
+              width: i == _current ? 18 : 7,
               decoration: BoxDecoration(
                 color: i == _current
                     ? AppColors.primary
@@ -289,16 +288,23 @@ class _DefaultBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          Expanded(child: Image.asset(AppAssets.shoe, fit: BoxFit.contain)),
-          const SizedBox(width: 12),
           Expanded(
+            flex: 5,
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Image.asset(AppAssets.shoe, fit: BoxFit.contain),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 6,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,27 +313,28 @@ class _DefaultBanner extends StatelessWidget {
                   'Happy New Year\nSpecial Deal\nSave 30%',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 17,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                     height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 SizedBox(
-                  height: 30,
+                  height: 28,
                   child: ElevatedButton(
                     onPressed: () => Get.to(
                       () => const ProductListScreen(
-                        title: 'Special deals',
+                        title: 'Special Deals',
                         tag: 'special',
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      fixedSize: const Size.fromHeight(30),
-                      textStyle: const TextStyle(fontSize: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                     ),
                     child: const Text('Buy Now'),
                   ),
@@ -348,6 +355,9 @@ class _SlideBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (slide.photoUrl.isEmpty) {
+      return const _DefaultBanner();
+    }
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       child: ClipRRect(
@@ -355,19 +365,19 @@ class _SlideBanner extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            AppNetworkImage(url: slide.photoUrl),
+            AppNetworkImage(url: slide.photoUrl, fit: BoxFit.cover),
             if (slide.description.isNotEmpty)
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(14, 24, 14, 12),
+                  padding: const EdgeInsets.fromLTRB(14, 20, 14, 10),
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, Colors.black54],
+                      colors: [Colors.transparent, Colors.black87],
                     ),
                   ),
                   child: Text(
@@ -377,6 +387,7 @@ class _SlideBanner extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
                 ),
@@ -410,13 +421,13 @@ class _ProductSection extends StatelessWidget {
           onSeeAll: () => Get.to(() => ProductListScreen(title: title, tag: tag)),
         ),
         SizedBox(
-          height: 178,
+          height: 185,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             itemCount: products.length,
             separatorBuilder: (_, _) => const SizedBox(width: 10),
-            itemBuilder: (_, i) => ProductCard(product: products[i], width: 112),
+            itemBuilder: (_, i) => ProductCard(product: products[i], width: 120),
           ),
         ),
       ],
@@ -442,7 +453,7 @@ class _HomeSkeleton extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
-        box(150, r: 14),
+        box(145, r: 14),
         const SizedBox(height: 24),
         Row(children: List.generate(4, (_) => Expanded(child: Padding(
               padding: const EdgeInsets.only(right: 12),
@@ -451,7 +462,7 @@ class _HomeSkeleton extends StatelessWidget {
         const SizedBox(height: 24),
         Row(children: List.generate(3, (_) => Expanded(child: Padding(
               padding: const EdgeInsets.only(right: 10),
-              child: box(150),
+              child: box(160),
             )))),
       ],
     );

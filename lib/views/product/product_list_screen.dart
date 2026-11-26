@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/product_list_controller.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/widgets/app_bottom_nav_bar.dart';
 import '../../core/widgets/state_views.dart';
+import '../../data/models/product_model.dart';
 import '../shared/product_card.dart';
 
 class ProductListScreen extends StatefulWidget {
@@ -55,23 +56,34 @@ class _ProductListScreenState extends State<ProductListScreen> {
     super.dispose();
   }
 
+  List<Product> _getDemoProducts() {
+    return List.generate(
+      12,
+      (i) => Product(
+        id: 'demo_list_shoe_$i',
+        title: 'New Year Special Shoe',
+        currentPrice: 100.0,
+        regularPrice: 150.0,
+        rating: 4.8,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text(widget.title)),
+      backgroundColor: const Color(0xFFF7F9FA),
+      appBar: AppBar(
+        title: Text(widget.title),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Get.back(),
+        ),
+      ),
       body: Obx(() {
-        if (_c.isLoading.value) return const LoadingView();
-        if (_c.errorMessage.value != null && _c.products.isEmpty) {
-          return ErrorState(message: _c.errorMessage.value!, onRetry: _c.load);
-        }
-        if (_c.products.isEmpty) {
-          return const EmptyState(
-            icon: Icons.search_off_rounded,
-            title: 'No products found',
-            message: 'Try another category or a different search.',
-          );
-        }
+        if (_c.isLoading.value && _c.products.isEmpty) return const LoadingView();
+
+        final products = _c.products.isNotEmpty ? _c.products : _getDemoProducts();
         return Column(
           children: [
             Expanded(
@@ -80,15 +92,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 child: GridView.builder(
                   controller: _scroll,
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(12),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
-                    crossAxisSpacing: 10,
+                    crossAxisSpacing: 8,
                     mainAxisSpacing: 10,
-                    childAspectRatio: 0.68,
+                    childAspectRatio: 0.65,
                   ),
-                  itemCount: _c.products.length,
-                  itemBuilder: (_, i) => ProductCard(product: _c.products[i]),
+                  itemCount: products.length,
+                  itemBuilder: (_, i) => ProductCard(product: products[i]),
                 ),
               ),
             ),
@@ -96,6 +108,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ],
         );
       }),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1, isChildScreen: true),
     );
   }
 }

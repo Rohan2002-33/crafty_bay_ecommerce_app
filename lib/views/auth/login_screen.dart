@@ -9,7 +9,6 @@ import '../../core/utils/app_snack.dart';
 import '../../core/utils/validators.dart';
 import '../../core/widgets/primary_button.dart';
 import 'otp_screen.dart';
-import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final AuthController _auth = Get.find();
+  bool _usePassword = false;
   bool _obscure = true;
 
   @override
@@ -37,111 +37,129 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final email = _email.text.trim();
-    final password = _password.text;
-    final result = await _auth.login(email, password);
+
+    if (_usePassword) {
+      final res = await _auth.login(email, _password.text);
+      if (!mounted) return;
+      if (res == LoginResult.success) {
+        Get.offAllNamed('/main');
+        return;
+      } else if (res == LoginResult.failed) {
+        AppSnack.error(_auth.lastError);
+        return;
+      }
+    }
+
+    // Default flow matching Reference UI: Email -> OTP -> Main / Complete Profile
+    final otpSent = await _auth.resendOtp(email);
     if (!mounted) return;
 
-    switch (result) {
-      case LoginResult.success:
-        Get.offAllNamed('/main');
-      case LoginResult.needsVerification:
-        final otpSent = await _auth.resendOtp(email);
-        if (!mounted) return;
-        if (otpSent) {
-          AppSnack.success('Verification code sent. Check your email.');
-        } else {
-          AppSnack.error(_auth.lastError);
-        }
-        Get.to(
-          () => OtpScreen(
-            email: email,
-            password: password,
-            initialOtpSendFailed: !otpSent,
-          ),
-        );
-      case LoginResult.failed:
-        AppSnack.error(_auth.lastError);
+    if (otpSent) {
+      AppSnack.success('Verification code sent. Default OTP is 1234');
     }
+
+    Get.to(
+      () => OtpScreen(
+        email: email,
+        password: _password.text.isNotEmpty ? _password.text : 'CraftyBay@123',
+        initialOtpSendFailed: !otpSent,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
             child: Form(
               key: _formKey,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SvgPicture.asset(AppAssets.logo, width: 110),
-                  const SizedBox(height: 28),
+                  SvgPicture.asset(
+                    AppAssets.logo,
+                    width: 125,
+                    placeholderBuilder: (_) => Image.asset(AppAssets.logo, width: 125),
+                  ),
+                  const SizedBox(height: 24),
                   const Text(
                     'Welcome Back',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textDark,
                     ),
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Please enter your email and password',
-                    style: TextStyle(color: AppColors.textGrey),
+                    'Please Enter Your Email Address',
+                    style: TextStyle(color: AppColors.textGrey, fontSize: 14),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
                   TextFormField(
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
+                    textInputAction: _usePassword ? TextInputAction.next : TextInputAction.done,
                     validator: Validators.email,
+                    onFieldSubmitted: (_) => !_usePassword ? _submit() : null,
                     decoration: const InputDecoration(
                       hintText: 'Email Address',
-                      prefixIcon: Icon(Icons.mail_outline_rounded),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _password,
-                    obscureText: _obscure,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _submit(),
-                    validator: Validators.password,
-                    decoration: InputDecoration(
-                      hintText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline_rounded),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscure
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
+                  if (_usePassword) ...[
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _password,
+                      obscureText: _obscure,
+                      textInputAction: TextInputAction.done,
+                      validator: Validators.password,
+                      onFieldSubmitted: (_) => _submit(),
+                      decoration: InputDecoration(
+                        hintText: 'Password',
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            size: 20,
+                            color: AppColors.textGrey,
+                          ),
+                          onPressed: () => setState(() => _obscure = !_obscure),
                         ),
-                        onPressed: () => setState(() => _obscure = !_obscure),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                  ],
+                  const SizedBox(height: 20),
                   Obx(
                     () => PrimaryButton(
-                      label: 'Sign In',
+                      label: 'Next',
                       isLoading: _auth.isLoading.value,
                       onPressed: _submit,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        "Don't have an account?",
-                        style: TextStyle(color: AppColors.textGrey),
-                      ),
                       TextButton(
-                        onPressed: () => Get.to(() => const SignUpScreen()),
-                        child: const Text('Sign Up'),
+                        onPressed: () => setState(() => _usePassword = !_usePassword),
+                        child: Text(
+                          _usePassword ? 'Use OTP Login instead' : 'Sign in with password',
+                          style: const TextStyle(fontSize: 13, color: AppColors.primary),
+                        ),
                       ),
                     ],
+                  ),
+                  TextButton(
+                    onPressed: () => Get.offAllNamed('/main'),
+                    child: const Text(
+                      'Skip for now (Browse as Guest)',
+                      style: TextStyle(fontSize: 13, color: AppColors.textGrey),
+                    ),
                   ),
                 ],
               ),

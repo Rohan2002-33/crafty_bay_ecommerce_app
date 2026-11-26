@@ -6,6 +6,7 @@ import '../../controllers/review_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/app_snack.dart';
 import '../../core/utils/validators.dart';
+import '../../core/widgets/app_bottom_nav_bar.dart';
 import '../../core/widgets/primary_button.dart';
 
 class CreateReviewScreen extends StatefulWidget {
@@ -22,7 +23,6 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
   final _first = TextEditingController();
   final _last = TextEditingController();
   final _comment = TextEditingController();
-  int _rating = 5;
 
   @override
   void initState() {
@@ -46,13 +46,13 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
 
     final ok = await widget.controller.submit(
       comment: _comment.text.trim(),
-      rating: _rating,
+      rating: 5,
     );
     if (!mounted) return;
 
     if (ok) {
       Get.back();
-      AppSnack.success('Thanks! Your review was posted.');
+      AppSnack.success('Review posted successfully!');
     } else {
       AppSnack.error(widget.controller.lastError);
     }
@@ -61,10 +61,17 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Review')),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Create Review'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Get.back(),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
@@ -72,50 +79,31 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
               children: [
                 TextFormField(
                   controller: _first,
-                  readOnly: true,
-                  decoration: const InputDecoration(hintText: 'First Name'),
+                  decoration: const InputDecoration(
+                    hintText: 'First Name',
+                    hintStyle: TextStyle(color: AppColors.textGrey),
+                  ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _last,
-                  readOnly: true,
-                  decoration: const InputDecoration(hintText: 'Last Name'),
+                  decoration: const InputDecoration(
+                    hintText: 'Last Name',
+                    hintStyle: TextStyle(color: AppColors.textGrey),
+                  ),
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Your rating',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: List.generate(5, (i) {
-                    return IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => setState(() => _rating = i + 1),
-                      icon: Icon(
-                        i < _rating
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        size: 36,
-                        color: AppColors.star,
-                      ),
-                    );
-                  }),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _comment,
-                  maxLines: 8,
-                  maxLength: 500,
-                  validator: (v) {
-                    final base = Validators.required(v, 'Review');
-                    if (base != null) return base;
-                    return v!.trim().length < 5 ? 'Write a little more' : null;
-                  },
-                  decoration: const InputDecoration(hintText: 'Write Review'),
+                  maxLines: 7,
+                  validator: (v) => Validators.required(v, 'Review'),
+                  decoration: const InputDecoration(
+                    hintText: 'Write Review',
+                    hintStyle: TextStyle(color: AppColors.textGrey),
+                    alignLabelWithHint: true,
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 24),
                 Obx(() => PrimaryButton(
                       label: 'Submit',
                       isLoading: widget.controller.isSubmitting.value,
@@ -126,6 +114,7 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 0, isChildScreen: true),
     );
   }
 }

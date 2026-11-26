@@ -1,7 +1,7 @@
 class Formatters {
   Formatters._();
 
-  static const String currency = '৳';
+  static const String currency = '\$';
 
   static String price(num value) {
     final fixed = value.toStringAsFixed(value % 1 == 0 ? 0 : 2);
