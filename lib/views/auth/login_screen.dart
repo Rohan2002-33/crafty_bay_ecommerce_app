@@ -11,7 +11,9 @@ import '../../core/widgets/primary_button.dart';
 import 'otp_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.redirectToCheckout = false});
+
+  final bool redirectToCheckout;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -42,7 +44,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final res = await _auth.login(email, _password.text);
       if (!mounted) return;
       if (res == LoginResult.success) {
-        Get.offAllNamed('/main');
+        if (widget.redirectToCheckout) {
+          Get.back(result: true);
+        } else {
+          Get.offAllNamed('/main');
+        }
         return;
       } else if (res == LoginResult.failed) {
         AppSnack.error(_auth.lastError);
@@ -50,19 +56,17 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
 
-    // Default flow matching Reference UI: Email -> OTP -> Main / Complete Profile
-    final otpSent = await _auth.resendOtp(email);
+    // Default flow matching Reference UI: Email -> OTP -> Complete Profile / Main
+    await _auth.initiateEmailVerification(email);
     if (!mounted) return;
 
-    if (otpSent) {
-      AppSnack.success('Verification code sent. Default OTP is 1234');
-    }
+    AppSnack.success('A 4 digit OTP code has been sent. Default OTP is 1234');
 
     Get.to(
       () => OtpScreen(
         email: email,
         password: _password.text.isNotEmpty ? _password.text : 'CraftyBay@123',
-        initialOtpSendFailed: !otpSent,
+        redirectToCheckout: widget.redirectToCheckout,
       ),
     );
   }
@@ -71,6 +75,15 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: widget.redirectToCheckout
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                onPressed: () => Get.back(),
+              ),
+              title: const Text('Email Verification'),
+            )
+          : null,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -154,13 +167,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  TextButton(
-                    onPressed: () => Get.offAllNamed('/main'),
-                    child: const Text(
-                      'Skip for now (Browse as Guest)',
-                      style: TextStyle(fontSize: 13, color: AppColors.textGrey),
+                  if (!widget.redirectToCheckout)
+                    TextButton(
+                      onPressed: () => Get.offAllNamed('/main'),
+                      child: const Text(
+                        'Skip for now (Browse as Guest)',
+                        style: TextStyle(fontSize: 13, color: AppColors.textGrey),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),

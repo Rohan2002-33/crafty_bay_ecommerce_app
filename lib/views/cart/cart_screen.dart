@@ -4,12 +4,14 @@ import 'package:get/get.dart';
 import '../../controllers/cart_controller.dart';
 import '../../controllers/nav_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/storage/session_store.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../core/widgets/quantity_stepper.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../data/models/product_model.dart';
+import '../auth/login_screen.dart';
 import '../checkout/checkout_screen.dart';
 
 class CartScreen extends StatelessWidget {
@@ -33,6 +35,58 @@ class CartScreen extends StatelessWidget {
         size: 'X',
       ),
     );
+  }
+
+  void _handleCheckout(BuildContext context) {
+    if (!SessionStore.hasToken) {
+      Get.bottomSheet(
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.lock_outline_rounded, color: AppColors.primary, size: 36),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Sign In & Complete Profile',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'To place an order and proceed with online payment, please enter your email and complete your profile.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textGrey, height: 1.4),
+              ),
+              const SizedBox(height: 20),
+              PrimaryButton(
+                label: 'Complete Profile / Sign In',
+                onPressed: () async {
+                  Get.back();
+                  final loggedIn = await Get.to(() => const LoginScreen(redirectToCheckout: true));
+                  if (loggedIn == true || SessionStore.hasToken) {
+                    Get.to(() => const CheckoutScreen());
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
+    Get.to(() => const CheckoutScreen());
   }
 
   @override
@@ -64,7 +118,7 @@ class CartScreen extends StatelessWidget {
         final items = cart.items.isNotEmpty ? cart.items : _getDemoItems();
         final total = cart.items.isNotEmpty
             ? cart.total
-            : items.fold(0.0, (s, e) => s + e.lineTotal * 1000); // Demo total: 100,000.00
+            : items.fold(0.0, (s, e) => s + e.lineTotal * 1000);
         return Container(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
           decoration: const BoxDecoration(
@@ -98,7 +152,7 @@ class CartScreen extends StatelessWidget {
               Expanded(
                 child: PrimaryButton(
                   label: 'Checkout',
-                  onPressed: () => Get.to(() => const CheckoutScreen()),
+                  onPressed: () => _handleCheckout(context),
                 ),
               ),
             ],

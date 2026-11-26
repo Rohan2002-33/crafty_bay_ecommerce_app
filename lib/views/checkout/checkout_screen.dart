@@ -5,10 +5,12 @@ import '../../controllers/cart_controller.dart';
 import '../../controllers/checkout_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_urls.dart';
+import '../../core/storage/session_store.dart';
 import '../../core/utils/app_snack.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/validators.dart';
 import '../../core/widgets/primary_button.dart';
+import '../auth/login_screen.dart';
 import '../orders/orders_screen.dart';
 import 'order_success_screen.dart';
 import 'payment_webview_screen.dart';
@@ -39,10 +41,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _placeOrder() async {
     FocusScope.of(context).unfocus();
     if (!_c.formKey.currentState!.validate()) return;
+
+    if (!SessionStore.hasToken) {
+      AppSnack.error('Please complete your profile or sign in before placing an order.');
+      final loggedIn = await Get.to(() => const LoginScreen(redirectToCheckout: true));
+      if (loggedIn != true && !SessionStore.hasToken) return;
+    }
+
     if (_cart.items.isEmpty) {
       AppSnack.error('Your cart is empty');
       return;
     }
+
+    // Ensure server cart is in sync before placing order
+    await _cart.syncLocalCartToServer();
 
     final result = await _c.placeOrder();
     if (!mounted) return;
@@ -89,7 +101,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Checkout')),
+      appBar: AppBar(
+        title: const Text('Checkout'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Get.back(),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

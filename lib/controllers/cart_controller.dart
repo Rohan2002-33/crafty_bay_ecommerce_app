@@ -21,7 +21,10 @@ class CartController extends GetxController {
   void onInit() {
     super.onInit();
     ever(Get.find<AuthController>().user, (u) {
-      if (u != null) load(silent: true);
+      if (u != null) {
+        syncLocalCartToServer();
+        load(silent: true);
+      }
     });
   }
 
@@ -42,6 +45,22 @@ class CartController extends GetxController {
       // offline support
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> syncLocalCartToServer() async {
+    if (!SessionStore.hasToken) return;
+    for (final item in items) {
+      // If it's a real server item, skip
+      if (!item.id.startsWith('cart_') && item.id.length > 10) continue;
+      try {
+        await ApiClient.post(AppUrls.cart, body: {
+          'product': item.product.id,
+          'quantity': item.quantity,
+          if (item.color.isNotEmpty) 'color': item.color,
+          if (item.size.isNotEmpty) 'size': item.size,
+        });
+      } catch (_) {}
     }
   }
 
@@ -70,13 +89,15 @@ class CartController extends GetxController {
     }
 
     if (SessionStore.hasToken) {
-      await ApiClient.post(AppUrls.cart, body: {
-        'product': product.id,
-        'quantity': quantity,
-        if (color != null && color.isNotEmpty) 'color': color,
-        if (size != null && size.isNotEmpty) 'size': size,
-      });
-      await load(silent: true);
+      try {
+        await ApiClient.post(AppUrls.cart, body: {
+          'product': product.id,
+          'quantity': quantity,
+          if (color != null && color.isNotEmpty) 'color': color,
+          if (size != null && size.isNotEmpty) 'size': size,
+        });
+        await load(silent: true);
+      } catch (_) {}
     }
 
     AppSnack.success('Added to cart');

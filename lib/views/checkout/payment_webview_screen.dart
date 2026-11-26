@@ -57,7 +57,7 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
 
     if (looksCancelled) return PaymentResult.cancelled;
     if (looksFailed) return PaymentResult.failed;
-    if (isRedirect) return PaymentResult.success;
+    if (isRedirect || lower.contains('success') || lower.contains('val_id')) return PaymentResult.success;
     return null;
   }
 

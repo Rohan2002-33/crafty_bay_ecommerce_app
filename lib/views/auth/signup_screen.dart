@@ -10,9 +10,14 @@ import '../../core/utils/validators.dart';
 import '../../core/widgets/primary_button.dart';
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key, this.initialEmail = ''});
+  const SignUpScreen({
+    super.key,
+    this.initialEmail = '',
+    this.redirectToCheckout = false,
+  });
 
   final String initialEmail;
+  final bool redirectToCheckout;
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -47,38 +52,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     final email = widget.initialEmail.isNotEmpty
         ? widget.initialEmail
-        : 'crafty_user_${DateTime.now().millisecondsSinceEpoch}@example.com';
+        : (_auth.currentEmail.value.isNotEmpty
+            ? _auth.currentEmail.value
+            : 'user_${DateTime.now().millisecondsSinceEpoch}@gmail.com');
 
-    final ok = await _auth.signup(
+    final ok = await _auth.completeProfileWithSignup(
       firstName: _firstName.text.trim(),
       lastName: _lastName.text.trim(),
       email: email,
-      password: 'CraftyBay@123',
       phone: _phone.text.trim(),
       city: _city.text.trim(),
       address: _address.text.trim(),
+      password: 'CraftyBay@123',
     );
     if (!mounted) return;
 
     if (ok) {
-      // Auto verify with default 1234 OTP
-      await _auth.verifyOtp(email: email, otp: '1234', password: 'CraftyBay@123');
-      AppSnack.success('Profile completed successfully!');
-      Get.offAllNamed('/main');
-    } else {
-      // If user already exists, update profile
-      final updated = await _auth.updateProfile({
-        'first_name': _firstName.text.trim(),
-        'last_name': _lastName.text.trim(),
-        'phone': _phone.text.trim(),
-        'city': _city.text.trim(),
-        'address': _address.text.trim(),
-      });
-      if (updated) {
-        Get.offAllNamed('/main');
+      AppSnack.success('Profile completed successfully! You are now logged in.');
+      if (widget.redirectToCheckout) {
+        Get.back(result: true);
       } else {
-        AppSnack.error(_auth.lastError);
+        Get.offAllNamed('/main');
       }
+    } else {
+      AppSnack.error(_auth.lastError.isNotEmpty ? _auth.lastError : 'Could not complete profile.');
     }
   }
 
@@ -87,6 +84,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        title: const Text('Complete Profile'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => Get.back(),
@@ -94,7 +92,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(28, 0, 28, 28),
+          padding: const EdgeInsets.fromLTRB(28, 8, 28, 28),
           child: Form(
             key: _formKey,
             child: Column(

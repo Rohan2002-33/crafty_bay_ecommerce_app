@@ -136,7 +136,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Complete Profile'), findsOneWidget);
+    expect(find.text('Complete Profile'), findsNWidgets(2));
     expect(find.text('Get started with us with your details'), findsOneWidget);
     expect(find.text('Complete'), findsOneWidget);
   });

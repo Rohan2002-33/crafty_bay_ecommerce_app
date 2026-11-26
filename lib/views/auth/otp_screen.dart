@@ -17,12 +17,12 @@ class OtpScreen extends StatefulWidget {
     super.key,
     required this.email,
     required this.password,
-    this.initialOtpSendFailed = false,
+    this.redirectToCheckout = false,
   });
 
   final String email;
   final String password;
-  final bool initialOtpSendFailed;
+  final bool redirectToCheckout;
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -68,41 +68,40 @@ class _OtpScreenState extends State<OtpScreen> {
       return;
     }
     FocusScope.of(context).unfocus();
-    final ok = await _auth.verifyOtp(
+
+    final result = await _auth.verifyOtpCode(
       email: widget.email,
       otp: _pin.text,
       password: widget.password,
     );
     if (!mounted) return;
 
-    if (ok) {
-      // Check if user has completed profile
-      final user = _auth.user.value;
-      if (user != null && user.firstName.isNotEmpty) {
-        Get.offAllNamed('/main');
+    if (result == OtpResult.verifiedExistingUser) {
+      AppSnack.success('Logged in successfully!');
+      if (widget.redirectToCheckout) {
+        Get.back(result: true);
       } else {
-        Get.off(() => SignUpScreen(initialEmail: widget.email));
+        Get.offAllNamed('/main');
       }
+    } else if (result == OtpResult.needsProfileCompletion) {
+      // Proceed directly to Screen 12: Complete Profile!
+      Get.off(
+        () => SignUpScreen(
+          initialEmail: widget.email,
+          redirectToCheckout: widget.redirectToCheckout,
+        ),
+      );
     } else {
       _pin.clear();
-      // If user not found on backend, proceed to Complete Profile
-      if (_auth.lastError.toLowerCase().contains('not found')) {
-        Get.off(() => SignUpScreen(initialEmail: widget.email));
-      } else {
-        AppSnack.error(_auth.lastError.isNotEmpty ? _auth.lastError : 'Invalid OTP code. Try 1234');
-      }
+      AppSnack.error('Invalid OTP code. Please use default code 1234');
     }
   }
 
   Future<void> _resend() async {
-    final ok = await _auth.resendOtp(widget.email);
+    await _auth.initiateEmailVerification(widget.email);
     if (!mounted) return;
-    if (ok) {
-      _startTimer();
-      AppSnack.success('A new OTP code has been sent (Default: 1234)');
-    } else {
-      AppSnack.error(_auth.lastError);
-    }
+    _startTimer();
+    AppSnack.success('A new OTP code has been sent (Default: 1234)');
   }
 
   @override
