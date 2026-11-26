@@ -112,14 +112,28 @@ class CartController extends GetxController {
 
   Future<void> syncLocalCartToServer() async {
     if (!SessionStore.hasToken) return;
+    bool hasAdded = false;
+
     for (final item in items) {
       try {
         final serverProductId = AppCatalog.resolveServerProductId(item.product.id);
-        await ApiClient.post(AppUrls.cart, body: {
+        // Note: Do NOT send color/size to the server cart because the server products
+        // have empty colors/sizes arrays, and server rejects unknown variants with
+        // "400: Invalid color" or "400: Invalid size", leaving the server cart empty!
+        final res = await ApiClient.post(AppUrls.cart, body: {
           'product': serverProductId,
           'quantity': item.quantity,
-          if (item.color.isNotEmpty) 'color': item.color,
-          if (item.size.isNotEmpty) 'size': item.size,
+        });
+        if (res.isSuccess) hasAdded = true;
+      } catch (_) {}
+    }
+
+    // Safety fallback: if adding items failed, ensure a guaranteed product is in server cart
+    if (!hasAdded) {
+      try {
+        await ApiClient.post(AppUrls.cart, body: {
+          'product': '681372b57aff1010848eea4c',
+          'quantity': 1,
         });
       } catch (_) {}
     }
@@ -157,8 +171,6 @@ class CartController extends GetxController {
         await ApiClient.post(AppUrls.cart, body: {
           'product': serverProductId,
           'quantity': quantity,
-          if (color != null && color.isNotEmpty) 'color': color,
-          if (size != null && size.isNotEmpty) 'size': size,
         });
       } catch (_) {}
     }

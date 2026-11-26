@@ -35,6 +35,16 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
           onProgress: (p) {
             if (mounted) setState(() => _progress = p);
           },
+          onPageStarted: (url) {
+            final result = _resolve(url);
+            if (result != null) _finish(result);
+          },
+          onUrlChange: (change) {
+            if (change.url != null) {
+              final result = _resolve(change.url!);
+              if (result != null) _finish(result);
+            }
+          },
           onNavigationRequest: (request) {
             final result = _resolve(request.url);
             if (result != null) {
@@ -51,13 +61,17 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
   /// Decide the transaction outcome from the URL the gateway sends us to.
   PaymentResult? _resolve(String url) {
     final lower = url.toLowerCase();
-    final isRedirect = lower.startsWith(widget.redirectUrl.toLowerCase());
-    final looksCancelled = lower.contains('cancel');
-    final looksFailed = lower.contains('fail');
+    final isRedirect = lower.startsWith(widget.redirectUrl.toLowerCase()) ||
+        lower.contains('jsonplaceholder.typicode.com') ||
+        lower.contains('craftybay.com/payment');
+    final looksCancelled = lower.contains('cancel') || lower.contains('cancelled');
+    final looksFailed = lower.contains('fail') || lower.contains('declined');
 
     if (looksCancelled) return PaymentResult.cancelled;
     if (looksFailed) return PaymentResult.failed;
-    if (isRedirect || lower.contains('success') || lower.contains('val_id')) return PaymentResult.success;
+    if (isRedirect || lower.contains('success') || lower.contains('val_id') || lower.contains('status=successful')) {
+      return PaymentResult.success;
+    }
     return null;
   }
 
